@@ -416,7 +416,7 @@ footer { padding-block: 24px 40px; display: flex; flex-wrap: wrap; justify-conte
           </div>
         </div>
       </div>
-      <div class="card span2" id="p5">
+      <div class="card" id="p5">
         <div class="card-inner">
           <div class="face front">
             <canvas data-viz="terminal" aria-hidden="true"></canvas>
@@ -467,6 +467,24 @@ footer { padding-block: 24px 40px; display: flex; flex-wrap: wrap; justify-conte
             <div class="back-top"><span class="name wide">Codexion</span><button class="close-btn" type="button" aria-label="Close details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
             <p class="back-desc">A multithreaded simulation in C: threads compete for shared resources under mutex locks and are scheduled by a heap, while a watchdog thread catches timeouts and shuts everything down cleanly, with every thread and lock released.</p>
             <div class="back-foot"><span class="tags">C · POSIX threads</span><a class="btn small" href="https://github.com/morganespb/codexion" target="_blank" rel="noopener">View code <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"></path></svg></a></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="p16">
+        <div class="card-inner">
+          <div class="face front">
+            <canvas data-viz="drones" aria-hidden="true"></canvas>
+            <button class="flip-btn" type="button" aria-expanded="false" aria-controls="p16-back"><span class="sr">Show details: Fly-in</span></button>
+            <span class="plus" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span>
+            <span class="txt">
+              <span class="name wide">Fly-in</span>
+              <span class="tags">Python · algorithms · pygame</span>
+            </span>
+          </div>
+          <div class="face back" id="p16-back">
+            <div class="back-top"><span class="name wide">Fly-in</span><button class="close-btn" type="button" aria-label="Close details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button></div>
+            <p class="back-desc">Routes a fleet of drones through a network of zones with limited capacity, in as few turns as possible. Each drone is planned with a space-time A* search over a shared reservation table, guided by a reverse Dijkstra heuristic, so no zone or link is ever overbooked. A pygame view animates the whole flight.</p>
+            <div class="back-foot"><span class="tags">Python · algorithms · pygame</span><a class="btn small" href="https://github.com/morganespb/fly_in" target="_blank" rel="noopener">View code <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"></path></svg></a></div>
           </div>
         </div>
       </div>
@@ -1001,6 +1019,41 @@ footer { padding-block: 24px 40px; display: flex; flex-wrap: wrap; justify-conte
     show(0);
     if (!reduce && slides.length > 1) setInterval(function () { if (!document.hidden) { i = (i + 1) % slides.length; show(i); } }, 3200);
   });
+
+  makers.drones = {
+    init: function (v) {
+      var a = area(v), W = a.w - 60, H = a.h - 40, ox = 26, oy = 26;
+      var P = function (x, y) { return [ox + x * W, oy + y * H]; };
+      var nodes = { s: P(0, 0.5), a: P(0.3, 0.12), b: P(0.3, 0.5), c: P(0.3, 0.88), d: P(0.62, 0.3), e: P(0.62, 0.75), g: P(1, 0.5) };
+      var edges = [['s','a'],['s','b'],['s','c'],['a','d'],['b','d'],['b','e'],['c','e'],['d','g'],['e','g']];
+      var paths = [['s','a','d','g'],['s','b','d','g'],['s','b','e','g'],['s','c','e','g']];
+      return { nodes: nodes, edges: edges, paths: paths };
+    },
+    draw: function (v, t) {
+      var s = v.state, c = v.ctx;
+      c.clearRect(0, 0, v.w, v.h);
+      c.strokeStyle = 'rgba(' + WHITE + ',0.14)'; c.lineWidth = 1; c.beginPath();
+      s.edges.forEach(function (e) { var p = s.nodes[e[0]], q = s.nodes[e[1]]; c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); });
+      c.stroke();
+      Object.keys(s.nodes).forEach(function (k) {
+        var p = s.nodes[k];
+        c.strokeStyle = 'rgba(' + WHITE + ',' + (k === 's' || k === 'g' ? '0.7' : '0.3') + ')';
+        c.strokeRect(p[0] - 5, p[1] - 5, 10, 10);
+      });
+      var cycle = 7, tt = reduce ? 2.2 : t % cycle;
+      for (var d = 0; d < 8; d++) {
+        var path = s.paths[d % s.paths.length], start = d * 0.45, prog = (tt - start) / 0.7;
+        if (prog < 0) prog = 0;
+        var seg = Math.min(path.length - 1, Math.floor(prog)), f = Math.min(1, prog - seg);
+        if (seg >= path.length - 1) { seg = path.length - 2; f = 1; }
+        var p = s.nodes[path[seg]], q = s.nodes[path[seg + 1]];
+        var x = p[0] + (q[0] - p[0]) * f, y = p[1] + (q[1] - p[1]) * f;
+        var done = prog >= path.length - 1;
+        c.fillStyle = 'rgba(' + WHITE + ',' + (done ? '0.35' : '0.95') + ')';
+        c.beginPath(); c.arc(x + (done ? (d % 4 - 1.5) * 4 : 0), y + (done ? Math.floor(d / 4) * 5 - 2 : 0), 2.6, 0, Math.PI * 2); c.fill();
+      }
+    }
+  };
 
   document.querySelectorAll('canvas[data-viz]').forEach(function (cv) {
     var m = makers[cv.getAttribute('data-viz')];
